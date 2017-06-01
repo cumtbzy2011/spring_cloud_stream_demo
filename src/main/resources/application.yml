@@ -1,0 +1,35 @@
+spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+  cloud:
+    stream:
+      bindings:
+        output:
+          destination: my-topic
+          producer:
+#消息分区：总分区数
+            partitionCount: 2
+#消息分区：SPEL分区依据,payload是发送的消息体对象，如果有调用.id，那么会对payload进行反序列化
+            partitionKeyExpression: payload.id
+        input:
+          destination: my-topic
+#就是发布-订阅模式，启动多个服务时，每个服务会生成自己的queue，去绑定到同一个exchange
+          group: my-group
+#消费组：一个消费组只会接收同一个消息一次
+#其实是同一个消费组的成员生成/监听的queue相同（destination.group）
+          consumer:
+#消息分区：消费者开启分区
+            partitioned: true
+#消息分区：总分区数
+      instance-count: 2
+#消息分区：本实例所属分区（其实就是创建Queue时的name=destination-group-index,并绑定到exchange)
+      instance-index: 1
+server:
+  port: 8080
+
+
+#实现发布-订阅模式，不同的中间件有不同的操作，而spring cloud stream把这种耦合归于Binder，
+#从而使业务逻辑和消息中间件解耦
